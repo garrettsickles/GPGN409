@@ -22,11 +22,14 @@ function Comet_Trajectory(filename)
     my2 = Least_Squares_Inversion(y, Gy, diag(sigma.^-2));
     % Plot the trajectories
     figure;
-    plot(mx(1)+mx(2)*cos(t), my(1)+my(2)*sin(t), 'Color', [0 .76 1], 'LineWidth',1.5);
+    plot(mx(1)+mx(2)*cos(t), my(1)+my(2)*sin(t),...
+        'Color', [0 .76 1], 'LineWidth',1.5);
     hold on;
-    plot(mx1(1)+mx1(2)*cos(t), my1(1)+my1(2)*sin(t), 'Color', [.1 .5 .9], 'LineWidth',1.5);
+    plot(mx1(1)+mx1(2)*cos(t), my1(1)+my1(2)*sin(t),...
+        'Color', [.1 .5 .9], 'LineWidth',1.5);
     hold on;
-    plot(mx2(1)+mx2(2)*cos(t), my2(1)+my2(2)*sin(t), 'Color', [.08 .3 .5],'LineWidth',1.5);
+    plot(mx2(1)+mx2(2)*cos(t), my2(1)+my2(2)*sin(t),...
+        'Color', [.08 .3 .5],'LineWidth',1.5);
     hold on;
     % Plot the data points
     scatter(x,y,20,'MarkerEdgeColor','b',...
@@ -60,7 +63,9 @@ function Comet_Trajectory(filename)
     ylabel('Y (AU)');
     axis([-7,13,-7,7])
     axis equal;
-    legend('Unweighted', 'Inverse', 'Inverse Square', 'Observations', 'Uncertainty');
+    legend('Unweighted', 'Inverse',...
+        'Inverse Square', 'Observations',...
+        'Uncertainty');
 end
 
 function [ m ] = Least_Squares_Inversion(d, G, W)
