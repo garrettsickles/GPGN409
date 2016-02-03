@@ -1,46 +1,29 @@
+% x = h + a * cos(t) * cos(p) - b * sin(t) * sin(p)
+% y = k + b * sin(t) * cos(p) + a * cos(t) * sin(p)
+
 function Comet_Trajectory(filename)
     % Import the data
-    data = importdata(filename);
-    x = data.data(:,1);
-    y = data.data(:,2);
-    angle = data.data(:,3);
-    sigma = data.data(:,4);
-    t = 0:0.001:(2*3.1415926);
+    [x, y, theta, s] = Import_Comet_Data(filename);
     % Setup the Operator
-    Gx = ones(length(x), 2);
-    Gx(:,2) = cosd(angle);
-    Gy = ones(length(y), 2);
-    Gy(:,2) = sind(angle);
-    % Unweighted Inversion
-    mx = Least_Squares_Inversion(x, Gx, diag(sigma.^0));
-    my = Least_Squares_Inversion(y, Gy, diag(sigma.^0));
-    % Setup and run the inversion (^-1)
-    mx1 = Least_Squares_Inversion(x, Gx, diag(sigma.^-1));
-    my1 = Least_Squares_Inversion(y, Gy, diag(sigma.^-1));
-    % Setup and run the inversion (^-2)
-    mx2 = Least_Squares_Inversion(x, Gx, diag(sigma.^-2));
-    my2 = Least_Squares_Inversion(y, Gy, diag(sigma.^-2));
+    Gx = [ones(length(x), 1) cosd(theta) sind(-theta)];
+    Gy = [ones(length(y), 1) sind(theta) cosd(theta)];
     % Plot the trajectories
     figure;
-    plot(mx(1)+mx(2)*cos(t), my(1)+my(2)*sin(t),...
-        'Color', [0 .76 1], 'LineWidth',1.5);
-    hold on;
-    plot(mx1(1)+mx1(2)*cos(t), my1(1)+my1(2)*sin(t),...
-        'Color', [.1 .5 .9], 'LineWidth',1.5);
-    hold on;
-    plot(mx2(1)+mx2(2)*cos(t), my2(1)+my2(2)*sin(t),...
-        'Color', [.08 .3 .5],'LineWidth',1.5);
-    hold on;
+    Plot_Ellipse(LSI(x,Gx), LSI(y,Gy),...
+        {'Color', [0 .76 1], 'LineWidth',1.5});
+    Plot_Ellipse(LSWI(x,Gx,s,-1), LSWI(y,Gy,s,-1),...
+        {'Color', [.1 .5 .9], 'LineWidth',1.5});
+    Plot_Ellipse(LSWI(x,Gx,s,-2),LSWI(y,Gy,s,-2),...
+        {'Color', [.08 .3 .5],'LineWidth',1.5});
     % Plot the data points
     scatter(x,y,20,'MarkerEdgeColor','b',...
         'MarkerFaceColor',[0 .5 .5],...
         'LineWidth',1.0);
     hold on;
     % Plot the error
-    for i=1:length(sigma)
-       plot(x(i)+sigma(i)*cos(t), y(i)+sigma(i)*sin(t),'k',...
-           'LineWidth',2.0);
-       hold on;
+    for i=1:length(s)
+        Plot_Circle([x(i), y(i), s(i)],...
+            {'k','LineWidth',1.5});
     end
     % Plot the sun
     plot(0, 0,'-ko',...
@@ -50,14 +33,12 @@ function Comet_Trajectory(filename)
         'MarkerSize',10);
     hold on;
     % Plot the Earth's Orbit
-    plot(cos(t), sin(t),...
-        'Color', [0 0.5 0],...
-        'LineWidth',2);
+    Plot_Circle([0, 0, 1],...
+        {'Color', [0 0.5 0],'LineWidth',2});
     % Plot Jupiter's Orbit
-    Jd = 5.20;
-    plot(Jd*cos(t), Jd*sin(t),...
-        'Color', [.9 .3 0],...
-        'LineWidth',2);
+    Plot_Circle([0, 0, 5.20],...
+        {'Color', [.9 .3 0],'LineWidth',2})
+    % Setup Plot Stuff
     title('Assignment 1: Inverting for the Trajectory of a Comet');
     xlabel('X (AU)');
     ylabel('Y (AU)');
@@ -68,7 +49,42 @@ function Comet_Trajectory(filename)
         'Uncertainty');
 end
 
-function [ m ] = Least_Squares_Inversion(d, G, W)
-    m = pinv((G.')*(W.')*(W)*(G))*(G.')*(W.')*(W)*(d);
+function [ x, y, theta, sigma ] = Import_Comet_Data(filename)
+    data = importdata(filename);
+    d = data.data;
+    x = d(:,1);
+    y = d(:,2);
+    theta = d(:,3);
+    sigma = d(:,4);
 end
 
+function [ m ] = LSWI(d, G, w, n)
+    W = diag(w.^(n));
+    m = pinv((G.')*(W.')*(W)*(G), 0.0001)*(G.')*(W.')*(W)*(d);
+end
+
+function [ m ] = LSI(d, G)
+    m = pinv((G.')*(G))*(G.')*(d);
+end
+
+function [ h, k, a, b, p ] = Ellipse_From_Coefficients(mx, my)
+    h = mx(1);
+    k = my(1);
+    p = atan2d(-mx(3), my(2));
+    a = mx(2)./cosd(p);
+    b = my(2)./cosd(p);
+end
+
+function Plot_Ellipse(mx, my, param)
+    t=0.0:0.001:2*3.1415926;
+    plot(mx(1)+mx(2)*cos(t)-mx(3)*sin(t),...
+        my(1)+my(2)*sin(t)+my(3)*cos(t),...
+        param{:});
+    hold on;
+end
+
+function Plot_Circle(m, param)
+    t=0.0:0.001:2*3.1415926;
+    plot(m(1)+m(3).*cos(t),m(2)+m(3).*sin(t), param{:});
+    hold on;
+end
