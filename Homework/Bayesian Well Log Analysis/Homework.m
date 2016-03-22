@@ -1,10 +1,6 @@
 function Homework()
     filename = 'data.txt';
-    PlotPrior(filename, 33);
-    
-    PlotPrior(filename, 96);
-    
-    PlotTheory();
+    PlotPosterior(filename, 33);
 end
 
 function [depth,gamma,phi,rho,caliper] = Import_Well_Log(filename)
@@ -37,7 +33,7 @@ function [vp] = Vel_From_Gamma(gamma)
     vp = 5.654 - 0.008.*gamma;
 end
 
-function [F] = PlotPrior(filename, d)
+function [FF] = PlotPrior(filename, d)
     [depth,gamma,phi,rho,caliper] = Import_Well_Log(filename);
     
     figure;
@@ -50,6 +46,10 @@ function [F] = PlotPrior(filename, d)
     F = mvnpdf([X(:) Y(:) Z(:)], [v(d) rho(d) phi(d)], sigma);
     F = reshape(F,length(x2),length(x1),length(x3));
 	set(slice(X,Y,Z,F,[3.0:.5:8.0],[],[]),'edgecolor','none');
+    title(['Prior Joint PDF at depth of ',num2str(depth(d)),' ft']);
+    xlabel('Velocity (km/s)');
+    ylabel('Density (g/cc)');
+    zlabel('Porosity (.)');
     axis tight;
     daspect([1 1 0.33]);
     view(26,32);
@@ -60,12 +60,16 @@ function [F] = PlotPrior(filename, d)
     F(:,:,1) = sum(FF(:,:,:),3);
     size(F)
 	set(slice(X,Y,Z,F,[3.0],[3.0],[0.0]),'edgecolor','none');
+    title(['Prior Joint PDF at depth of ',num2str(depth(d)),' ft']);
+    xlabel('Velocity (km/s)');
+    ylabel('Density (g/cc)');
+    zlabel('Porosity (.)');
     axis tight;
     daspect([1 1 0.33]);
     view(26,32);
 end
 
-function [F] = PlotTheory()
+function [FF] = PlotTheory()
     x1 = 3.0:0.05:8.0;
     x2 = 2.0:0.02:3.0;
     x3 = 0.0:0.01:0.5;
@@ -80,16 +84,55 @@ function [F] = PlotTheory()
     end
     figure;
     set(slice(X,Y,Z,F,[3.0:.5:8.0],[],[]),'edgecolor','none');
+    title(['Theorhetical Joint PDF']);
+    xlabel('Velocity (km/s)');
+    ylabel('Density (g/cc})');
+    zlabel('Porosity (.)');
     axis tight;
     daspect([1 1 0.33]);
     view(26,32);
-        figure;
+    figure;
     FF = F;
     F(length(x2),:,:) = sum(FF(:,:,:),1);
     F(:,1,:) = sum(FF(:,:,:),2);
     F(:,:,1) = sum(FF(:,:,:),3);
     size(F)
 	set(slice(X,Y,Z,F,[3.0],[3.0],[0.0]),'edgecolor','none');
+    title(['Theorhetical Joint PDF']);
+    xlabel('Velocity (km/s)');
+    ylabel('Density (g/cc})');
+    zlabel('Porosity (.)');
+    axis tight;
+    daspect([1 1 0.33]);
+    view(26,32);
+end
+
+function [FF] = PlotPosterior(filename, depth)
+    F = PlotPrior(filename, 33).*PlotTheory();
+    
+    x1 = 3.0:0.05:8.0;
+    x2 = 2.0:0.02:3.0;
+    x3 = 0.0:0.01:0.5;
+    [X,Y,Z] = meshgrid(x1,x2,x3);
+    figure;
+    set(slice(X,Y,Z,F,[3.0:.5:8.0],[],[]),'edgecolor','none');
+    title(['Posterior Joint PDF']);
+    xlabel('Velocity (km/s)');
+    ylabel('Density (g/cc})');
+    zlabel('Porosity (.)');
+    axis tight;
+    daspect([1 1 0.33]);
+    view(26,32);
+    figure;
+    FF = F;
+    F(length(x2),:,:) = sum(FF(:,:,:),1);
+    F(:,1,:) = sum(FF(:,:,:),2);
+    F(:,:,1) = sum(FF(:,:,:),3);
+    set(slice(X,Y,Z,F,[3.0],[3.0],[0.0]),'edgecolor','none');
+    title(['Posterior Joint PDF']);
+    xlabel('Velocity (km/s)');
+    ylabel('Density (g/cc})');
+    zlabel('Porosity (.)');
     axis tight;
     daspect([1 1 0.33]);
     view(26,32);
