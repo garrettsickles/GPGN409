@@ -107,7 +107,9 @@ function [FF] = PlotTheory()
     view(26,32);
 end
 
-function [FF] = PlotPosterior(filename, depth)
+function [FF] = PlotPosterior(filename, d)
+    [depth,gamma,phi,rho,caliper] = Import_Well_Log(filename);
+
     F = PlotPrior(filename, 33).*PlotTheory();
     
     x1 = 3.0:0.05:8.0;
@@ -116,7 +118,7 @@ function [FF] = PlotPosterior(filename, depth)
     [X,Y,Z] = meshgrid(x1,x2,x3);
     figure;
     set(slice(X,Y,Z,F,[3.0:.5:8.0],[],[]),'edgecolor','none');
-    title(['Posterior Joint PDF']);
+    title(['Posterior Joint PDF at depth of ',num2str(depth(d)),' ft']);
     xlabel('Velocity (km/s)');
     ylabel('Density (g/cc})');
     zlabel('Porosity (.)');
@@ -129,7 +131,7 @@ function [FF] = PlotPosterior(filename, depth)
     F(:,1,:) = sum(FF(:,:,:),2);
     F(:,:,1) = sum(FF(:,:,:),3);
     set(slice(X,Y,Z,F,[3.0],[3.0],[0.0]),'edgecolor','none');
-    title(['Posterior Joint PDF']);
+    title(['Posterior Joint PDF at depth of ',num2str(depth(d)),' ft']);
     xlabel('Velocity (km/s)');
     ylabel('Density (g/cc})');
     zlabel('Porosity (.)');
