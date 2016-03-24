@@ -151,9 +151,9 @@ function [FF] = PlotPosterior(filename, d)
     [I1,I2,I3] = ind2sub(size(PRIOR),ix);
     
     POST = FF;
-    [m,iix] = max(PRIOR);
-    [II1,II2,II3] = ind2sub(size(POST),ix);
-    length(PRIOR(1,:,3))
+    [m,iix] = max(POST(:));
+    [II1,II2,II3] = ind2sub(size(POST),iix);
+    length(POST(1,:,3))
     figure;
     
     PRPDF = normpdf(x1,x1(I2),std(x1,PRIOR(I1,:,I3)));
