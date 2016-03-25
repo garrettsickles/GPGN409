@@ -1,10 +1,12 @@
 function Refactor()
     filename = 'data.txt';
-    d = 33;
+    d = 3000;
     
     Prior = PlotPrior(filename, d);
     Theory = PlotTheory();
     PlotPosterior(filename, Prior, Theory, d);
+    PlotPosterior(filename, Prior.*Theory, Theory, d);
+    LogPanel(filename);
 end
 
 function [depth,gamma,phi,rho,caliper] = ImportWellLog(filename)
@@ -57,7 +59,7 @@ function [F] = PlotPrior(filename, d)
     x1 = 3.0:0.05:8.0;
     x2 = 2.0:0.02:3.0;
     x3 = 0.0:0.01:0.5;
-    sigma = [std(vel(:)) 0 0;0 std(rho(:)) 0; 0 0 std(phi(:))].*((abs(caliper(d)-5.999))/range(caliper(:)));
+    sigma = [std(vel(:)) 0 0;0 std(rho(:)) 0.0; 0 0.0 std(phi(:))].*10.*((abs(caliper(d)-5.999))/range(caliper(:)));
     [X, Y, Z, F, FF] = CalculatePrior(vel(:), rho(:), phi(:), x1(:), x2(:), x3(:), sigma, d);
 	
     figure;
@@ -179,8 +181,17 @@ function [Post] = PlotPosterior(filename, Prior, Theory, d)
     [m,Psx] = max(Post(:));
     [II1,II2,II3] = ind2sub(size(Post),Psx);
     
-    PRPDF = normpdf(x1,x1(I2),std(x1,Prior(I1,:,I3)));
-    PSTPDF = normpdf(x1,x1(II2),std(x1,Post(II1,:,II3)));
+    PrV = Prior(I1,:,I3);
+    PrR = reshape(Prior(:,I2,I3), 1, length(x2));
+    PrP = reshape(Prior(I1,I2,:), 1, length(x3));
+    stdPr = (std(x1,PrV).^2+std(x2,PrR).^2+std(x3,PrP).^2).^(0.5);
+    
+    PsV = Post(II1,:,II3);
+    PsR = reshape(Post(:,II2,II3), 1, length(x2));
+    PsP = reshape(Post(II1,II2,:), 1, length(x3));
+    stdPs = (std(x1,PsV).^2+std(x2,PsR).^2+std(x3,PsP).^2).^(0.5);
+    PRPDF = normpdf(x1,x1(I2),stdPr);
+    PSTPDF = normpdf(x1,x1(II2),stdPs);
     
     figure;
     plot(x1,PRPDF, 'b'); hold on;
@@ -193,3 +204,91 @@ function [Post] = PlotPosterior(filename, Prior, Theory, d)
     legend('Prior','Posterior');
     title(['Prior vs. Posterior at ',num2str(depth(d)),' ft']);
 end
+
+function LogPanel(filename)
+    [depth,gamma,phi,rho,caliper] = ImportWellLog(filename);
+    
+    figure;
+    subplot(1,6,1);
+    plot(gamma(:),depth(:),'k');
+    xlabel('GR (API)');
+    ylabel('Depth (ft)')
+    set(gca, 'YTickLabel', num2str(get(gca,'YTick')','%d'));
+    set(gca,'Ydir','reverse')
+    subplot(1,6,2);
+    plot(caliper(:),depth(:),'g');
+    xlabel('CALI (in)');
+    set(gca,'ytick',[]);
+    set(gca,'yticklabel',[]);
+    set(gca,'Ydir','reverse')
+    subplot(1,6,3);
+    plot(phi(:),depth(:),'r');
+    xlabel('\phi(.)');
+    set(gca,'ytick',[]);
+    set(gca,'yticklabel',[]);
+    set(gca,'Ydir','reverse')
+    xlim([0.0 0.5]);
+    subplot(1,6,4);
+    plot(rho(:),depth(:),'b');
+    xlabel('\rho(g/cc)');
+    set(gca,'ytick',[]);
+    set(gca,'yticklabel',[]);
+    set(gca,'Ydir','reverse');
+    
+    x1 = 3.0:0.05:8.0;
+    x2 = 2.0:0.02:3.0;
+    x3 = 0.0:0.01:0.5;
+    v = Vel_From_Gamma(gamma);
+    
+    vstd = std(v);
+    Prior = zeros(length(depth),length(x1));
+    for i=1:length(depth)
+        Prior(i,:) = mvnpdf(x1(:),v(i),vstd);
+    end
+    subplot(1,6,5);
+    surf(x1,depth,Prior,'edgecolor','none');
+    title('Prior')
+    xlabel('v (km/s)')
+    set(gca,'ytick',[]);
+    set(gca,'yticklabel',[]);
+    set(gca,'Ydir','reverse');
+    axis tight;
+    view(0,90);
+    
+    [X,Y,Z] = meshgrid(x1,x2,x3);
+    [A,B] = meshgrid(x2,x3);
+    THEORY = zeros(length(x2),length(x1),length(x3));
+    THEORY = reshape(THEORY,length(x2),length(x1),length(x3));
+    sigma1 = [0.02 0; 0 0.01];
+    for i=1:length(x1)
+        phi1 = Phi_From_Vel(x1(i));
+        THEORY(:,i,:) = reshape(mvnpdf([A(:) B(:)], [Rho_From_Phi(phi1) phi1], sigma1), length(x2), length(x3))';
+    end
+    
+    POST = zeros(length(depth),length(x1));
+    size(POST)
+    length(depth)
+    sigma2 = [std(v(:)) 0 0;0 std(rho(:)) 0; 0 0 std(phi(:))];
+    for i=1:length(depth)
+        F = mvnpdf([X(:) Y(:) Z(:)], [v(i) rho(i) phi(i)], sigma2.*((abs(caliper(i)-5.9999))/range(caliper(:))));
+        F = reshape(F,length(x2),length(x1),length(x3));
+        F = F.*THEORY;
+        F = F.*THEORY;
+        [m,ix] = max(F(:));
+        [I1,I2,I3] = ind2sub(size(F),ix);
+        PDF = mvnpdf(x1(:),x1(I2),std(x1,F(I1,:,I3)));
+        PDF = PDF./max(PDF(:));
+        POST(i,:) = PDF;
+    end
+    
+    subplot(1,6,6);
+    surf(x1,depth,POST,'edgecolor','none');
+    title('Posterior')
+    xlabel('v (km/s)')
+    set(gca,'ytick',[]);
+    set(gca,'yticklabel',[]);
+    set(gca,'Ydir','reverse');
+    axis tight;
+    view(0,90);
+end
+
