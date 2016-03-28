@@ -8,29 +8,76 @@ function IterativeMethods()
     G = [ones(length(x), 1) x(:) x(:).^2];
     
     a = -2:0.05:2;
-    b = 0.5:0.05:2;
-    c = -0.5:0.05:0.5;
-    m0 = [0 1 -0.5]';
+    b = -2.0:0.05:2;
+    c = -1.0:0.05:1.0;
+    m_naught = [0 2.0 -0.5]';
     [mx, my, mz] = sphere;
-    r = 0.03;
+    r = 0.06;
     
-    m1 = SteepestDescent(m0, d, G, 4);
-    m2 = ConjugateGradient(m0, d, G, 3);
+    SD = SteepestDescent(m_naught, d, G, 3);
+    CG = ConjugateGradient(m_naught, d, G, 3);
     
-    ObjectiveFunction(a, b, c, d, G);
-    plot3(m1(:,1),m1(:,2),m1(:,3),'r','LineWidth',7); hold on;
-    surf(mx*r+m0(1), my*r+m0(2), mz*r+m0(3));
+    [J, X, Y, Z] = ObjectiveFunction(a, b, c, d, G);
+    
+    figure('Position',[400,400,600,450]);
+    surf(mx*r+m_naught(1), my*2*r+m_naught(2), mz*r+m_naught(3),...
+        'FaceColor',[1 0 0], 'EdgeAlpha', 0);
+    hold on;
+    set(slice(X,Y,Z,J,median(a),median(b),median(c)),'edgecolor','none');
+    xlabel('m_{1} (km)');
+    ylabel('m_{2} (-)');
+    zlabel('m_{3} (km^{-1})');
+    title('Objective Function Volume');
+    colormap jet;
+    axis tight;
+    xlabel(colorbar, 'km');
+    legend('m_{o}');
+    view(-115, 17);
+    
+    figure('Position',[400,400,600,450]);
+    set(slice(X,Y,Z,J,max(a),min(b),min(c)),'edgecolor','none');
+    xlabel('m_{1} (km)');
+    ylabel('m_{2} (-)');
+    zlabel('m_{3} (km^{-1})');
+    title('Objective Function Volume with Steepest Descent path');
+    colormap jet;
+    axis tight;
+    xlabel(colorbar, 'km');
+    hold on;
+    plot3(SD(:,1),SD(:,2),SD(:,3),'r','LineWidth',7); hold on;
+    hold on;
+    surf(mx*r+m_naught(1), my*r+m_naught(2), mz*r+m_naught(3));
     axis equal;
-    view(-103, 16);
+    view(-115, 22);
     
-    ObjectiveFunction(a, b, c, d, G);
-    plot3(m2(:,1),m2(:,2),m2(:,3),'r','LineWidth',7); hold on;
-    surf(mx*r+m0(1), my*r+m0(2), mz*r+m0(3));
+    figure('Position',[400,400,600,450]);
+    set(slice(X,Y,Z,J,max(a),min(b),min(c)),'edgecolor','none');
+    xlabel('m_{1} (km)');
+    ylabel('m_{2} (-)');
+    zlabel('m_{3} (km^{-1})');
+    title('Objective Function Volume with Conjugate Gradient path');
+    colormap jet;
+    axis tight;
+    xlabel(colorbar, 'km');
+    hold on;
+    plot3(CG(:,1),CG(:,2),CG(:,3),'r','LineWidth',7); hold on;
+    surf(mx*r+m_naught(1), my*r+m_naught(2), mz*r+m_naught(3));
     axis equal;
-    view(-103, 16);
+    view(-115, 22);
     
-    BallisticPlot(m1, [x(:) z(:)]);
-    BallisticPlot(m2, [x(:) z(:)]);
+    figure('Position',[400,400,600,300]);
+    BallisticPlot(SD, [x(:) z(:)]);
+    xlabel('x (km)');
+    ylabel('z (km)');
+    title('Steepest Descent Method');
+    legend('m^{o}','m^{1}','m^{2}','m^{3}','Data');
+    
+    figure('Position',[400,400,600,300]);
+    BallisticPlot(CG, [x(:) z(:)]);
+    xlabel('x (km)');
+    ylabel('z (km)');
+    title('Conjugate Gradient Method');
+    legend('m^{o}','m^{1}','m^{2}','m^{3}','Data');
 end
 
 function [J, X, Y, Z] = ObjectiveFunction(x, y, z, d, G)
@@ -44,13 +91,6 @@ function [J, X, Y, Z] = ObjectiveFunction(x, y, z, d, G)
             end
         end
     end
-    
-    figure;
-    set(slice(X,Y,Z,J,max(x),min(y),min(z)),'edgecolor','none');
-    colormap jet;
-    axis tight;
-    colorbar;
-    hold on;
 end
 
 function [mv] = SteepestDescent(m, d, G, n)
@@ -83,11 +123,9 @@ function [mv] = ConjugateGradient(m, d, G, n)
 end
 
 function BallisticPlot(m, d)
-    figure;
-    
     for i=1:size(m,1)
-        display(['Iteration #',num2str(i),':'])
-        [x, y] = BallisticTrajectory(m(i,:));
+        [x, y, p] = BallisticTrajectory(m(i,:));
+        p
         plot(x, y,...
             '--','LineWidth', 1.5);
         hold on;
@@ -100,14 +138,12 @@ function BallisticPlot(m, d)
     hold on;
 end
 
-function [x, y] = BallisticTrajectory(m)
+function [x, y, p] = BallisticTrajectory(m)
     r = roots([m(3) m(2) m(1)]);
-    x = r(2):0.1:r(1);
+    x = min(r(:)):0.01:max(r(:));
     y = m(1).*ones(1, length(x)) + m(2).*x + m(3).*(x.^2);
-    x0 = r(2);
+    x0 = x(1);
     theta = atan(m(2)+(2.*m(3).*x0));
     v0 = ((-9.81*(10^(-3)))./((2.0).*m(3).*(cos(theta).^2))).^0.5;
-    display(['X initial (km): ', num2str(x0)]);
-    display(['Theta (deg): ', num2str(theta.*180./(3.1415926))]);
-    display(['Velocity (km/s): ', num2str(v0)]);
+    p = [x0 theta.*180./(3.1415926) v0];
 end
