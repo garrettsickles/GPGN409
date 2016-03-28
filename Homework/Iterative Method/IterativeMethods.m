@@ -60,7 +60,7 @@ function IterativeMethods()
     axis tight;
     xlabel(colorbar, 'km');
     hold on;
-    plot3(CG(:,1),CG(:,2),CG(:,3),'r','LineWidth',7); hold on;
+    plot3(CG(:,1),CG(:,2),CG(:,3),'LineWidth',7); hold on;
     surf(mx*r+m_naught(1), my*r+m_naught(2), mz*r+m_naught(3));
     axis equal;
     view(-115, 22);
@@ -125,7 +125,6 @@ end
 function BallisticPlot(m, d)
     for i=1:size(m,1)
         [x, y, p] = BallisticTrajectory(m(i,:));
-        p
         plot(x, y,...
             '--','LineWidth', 1.5);
         hold on;
