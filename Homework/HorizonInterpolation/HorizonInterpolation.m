@@ -24,13 +24,29 @@ function HorizonInterpolation()
         + diag(ones(length(x)-1, 1), 1)...
         + diag(ones(length(x)-1, 1), -1); % Setup the interpolation matrix
     
+    W_mk = W_mk./(x_delta.^2);
+    
     iter = 101;
     z = zeros(length(x), iter);
     z_model = ones(length(x), 1);
+    z_model(1:length(z_model)) = linspace(min(z_data),max(z_data),length(x));
     r_d = zeros(iter, 1);
     r_m = zeros(iter, 1);
-    S_mv = logspace(-2,2,iter);
-
+    S_mv = logspace(-3,3,iter);
+    
+    % Uncomment the below section to add in a fault
+%     x1 = 18;
+%     x2 = 27;
+%     ix1 = round((x1-x_min)./(x_delta));
+%     ix2 = round((x2-x_min)./(x_delta));
+%     W_mk(ix1, ix1-1) = 0;
+%     W_mk(ix1-1, ix1) = 0;
+%     W_mk(ix2, ix2+1) = 0;
+%     W_mk(ix2+1, ix2) = 0;
+%     z_model(1:(ix1-1)) = linspace(5,1,ix1-1);
+%     z_model(ix1:ix2) = linspace(7.5,5,ix2-ix1+1);
+%     z_model((ix2+1):length(z_model)) = linspace(4,10,length(z_model)-ix2);
+    
     for i=1:iter
         W_m = W_mk./(S_mv(i));
         z(:,i) = pinv(K'*(W_d'*W_d)*K+W_m'*W_m)*(K'*(W_d'*W_d)*z_data+W_m'*W_m*z_model);
@@ -41,7 +57,23 @@ function HorizonInterpolation()
     r_norm = (r_d.^2+r_m.^2).^(0.5);
     [junk, index] = min(r_norm);
     
-    figure;
+    W_m = W_mk./(S_mv(index));
+    C_mt = pinv((K'*(W_d'*W_d)*K)-(W_m'*W_m));
+    
+    figure('Position',[400 400 600 400]);
+    surf(C_mt,'EdgeAlpha',0.0);
+    colormap jet;
+    view([0 90])
+    set(gca,'xtick',[]);
+    set(gca,'xticklabel',[]);
+    set(gca,'ytick',[]);
+    set(gca,'yticklabel',[]);
+    colorbar;
+    title('$\tilde{C}_{m}$','Interpreter','Latex');
+    axis tight;
+    axis equal;
+    
+    figure('Position',[400 400 600 400]);
     subplot(2,2,1);
     plot(r_m, r_d,...
         'o', 'MarkerFaceColor', 'k', 'color', 'k'); hold on;
@@ -51,7 +83,6 @@ function HorizonInterpolation()
         'o', 'MarkerFaceColor', 'r', 'MarkerEdgeColor', 'r'); hold on;
     scatter(r_m(iter), r_d(iter),...
         'o', 'MarkerFaceColor', 'b', 'MarkerEdgeColor', 'b'); hold on;
-    axis equal;
     xlabel('||r_{m}||');
     ylabel('||r_{d}||');
     title('Data and Model Residual Comparison');
@@ -81,10 +112,11 @@ function HorizonInterpolation()
     ylabel('Z (km)');
     axis tight;
     axis equal;
-    legend('Data Points','Model','Min. Model','Max. Model','Opt. Model');
+    legend('Data Points','Model','Min. Model','Max. Model','Opt. Model',...
+        'Location','southeast');
     title('Raw Data with Certain Models Displayed');
     
-    figure;
+    figure('Position',[400 400 600 400]);
     [X, Y] = meshgrid(log10(S_mv), x);
     surf(X, Y, z, 'EdgeColor', [0 0 0], 'EdgeAlpha', 0.1);
     colormap('gray');
@@ -97,8 +129,9 @@ function HorizonInterpolation()
         'Color', 'g', 'LineWidth', 4); hold on;
     view([43, 54]);
     title('Model Space with Specific Models');
-    xlabel('X (km)');
-    ylabel('Uncertainty');
+    xlabel('$\log_{10}(\sigma_{m})$','Interpreter','Latex');
+    ylabel('X (km)');
     zlabel('Z (km)');
-    legend('Model Space','Min. Model','Max. Model','Opt. Model');
+    legend('Model Space','Min. Model','Max. Model','Opt. Model',...
+        'Location','northwest');
 end
