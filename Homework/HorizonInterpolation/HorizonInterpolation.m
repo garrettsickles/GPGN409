@@ -35,17 +35,17 @@ function HorizonInterpolation()
     S_mv = logspace(-4,4,iter);
     
     % Uncomment the below section to add in a fault
-    x1 = 18;
-    x2 = 27;
-    ix1 = round((x1-x_min)./(x_delta));
-    ix2 = round((x2-x_min)./(x_delta));
-    W_mk(ix1, ix1-1) = 0;
-    W_mk(ix1-1, ix1) = 0;
-    W_mk(ix2, ix2+1) = 0;
-    W_mk(ix2+1, ix2) = 0;
-    z_model(1:(ix1-1)) = linspace(5,1,ix1-1);
-    z_model(ix1:ix2) = linspace(7.5,5,ix2-ix1+1);
-    z_model((ix2+1):length(z_model)) = linspace(4,10,length(z_model)-ix2);
+%     x1 = 18;
+%     x2 = 27;
+%     ix1 = round((x1-x_min)./(x_delta));
+%     ix2 = round((x2-x_min)./(x_delta));
+%     W_mk(ix1, ix1-1) = 0;
+%     W_mk(ix1-1, ix1) = 0;
+%     W_mk(ix2, ix2+1) = 0;
+%     W_mk(ix2+1, ix2) = 0;
+%     z_model(1:(ix1-1)) = linspace(5,1,ix1-1);
+%     z_model(ix1:ix2) = linspace(7.5,5,ix2-ix1+1);
+%     z_model((ix2+1):length(z_model)) = linspace(4,10,length(z_model)-ix2);
     
     for i=1:iter
         W_m = W_mk./(S_mv(i));
