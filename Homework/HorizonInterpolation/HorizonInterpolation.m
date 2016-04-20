@@ -29,10 +29,10 @@ function HorizonInterpolation()
     iter = 101;
     z = zeros(length(x), iter);
     z_model = ones(length(x), 1);
-    z_model(1:length(z_model)) = linspace(min(z_data),max(z_data),length(x));
+    z_model(1:length(z_model)) = linspace(4.0,10.0,length(x));
     r_d = zeros(iter, 1);
     r_m = zeros(iter, 1);
-    S_mv = logspace(-3,3,iter);
+    S_mv = logspace(-4,4,iter);
     
     % Uncomment the below section to add in a fault
 %     x1 = 18;
@@ -54,13 +54,22 @@ function HorizonInterpolation()
         r_m(i) = (norm(W_mk*(z(:,i)-z_model)));
     end
     
+    r_d = r_d./max(r_d(:));
+    r_m = r_m./max(r_m(:));
     r_norm = (r_d.^2+r_m.^2).^(0.5);
     [junk, index] = min(r_norm);
-    
-    W_m = W_mk./(S_mv(index));
-    C_mt = pinv((K'*(W_d'*W_d)*K)-(W_m'*W_m));
+
+    W_m = W_mk./(S_mv(1));
+    C_mt = pinv((K'*(W_d'*W_d)*K)+(W_m'*W_m));
+    Rho = zeros(size(C_mt));
+    for i=1:size(C_mt,1)
+        for j=1:size(C_mt,2)
+            Rho(i,j) = C_mt(i,j)/(C_mt(i,i).^(0.5).*C_mt(j,j).^(0.5));
+        end
+    end
     
     figure('Position',[400 400 600 400]);
+    subplot(2,3,1);
     surf(C_mt,'EdgeAlpha',0.0);
     colormap jet;
     view([0 90])
@@ -68,15 +77,98 @@ function HorizonInterpolation()
     set(gca,'xticklabel',[]);
     set(gca,'ytick',[]);
     set(gca,'yticklabel',[]);
-    colorbar;
-    title('$\tilde{C}_{m}$','Interpreter','Latex');
+    set(gca,'YDir','reverse');
+    title('Min. Covariance');
+    axis tight;
+    axis equal;
+    
+    subplot(2,3,4);
+    surf(Rho,'EdgeAlpha',0.0);
+    colormap jet;
+    view([0 90])
+    set(gca,'xtick',[]);
+    set(gca,'xticklabel',[]);
+    set(gca,'ytick',[]);
+    set(gca,'yticklabel',[]);
+    set(gca,'YDir','reverse');
+    title('Min. Correlation');
+    axis tight;
+    axis equal;
+    
+    W_m = W_mk./(S_mv(index));
+    C_mt = pinv((K'*(W_d'*W_d)*K)+(W_m'*W_m));
+    Rho = zeros(size(C_mt));
+    for i=1:size(C_mt,1)
+        for j=1:size(C_mt,2)
+            Rho(i,j) = C_mt(i,j)/(C_mt(i,i).^(0.5).*C_mt(j,j).^(0.5));
+        end
+    end
+    
+    subplot(2,3,2);
+    surf(C_mt,'EdgeAlpha',0.0);
+    colormap jet;
+    view([0 90])
+    set(gca,'xtick',[]);
+    set(gca,'xticklabel',[]);
+    set(gca,'ytick',[]);
+    set(gca,'yticklabel',[]);
+    set(gca,'YDir','reverse');
+    title('Opt. Covariance');
+    axis tight;
+    axis equal;
+    
+    subplot(2,3,5);
+    surf(Rho,'EdgeAlpha',0.0);
+    colormap jet;
+    view([0 90])
+    set(gca,'xtick',[]);
+    set(gca,'xticklabel',[]);
+    set(gca,'ytick',[]);
+    set(gca,'yticklabel',[]);
+    set(gca,'YDir','reverse');
+    title('Opt. Correlation');
+    axis tight;
+    axis equal;
+    
+    W_m = W_mk./(S_mv(iter));
+    C_mt = pinv((K'*(W_d'*W_d)*K)+(W_m'*W_m));
+    Rho = zeros(size(C_mt));
+    for i=1:size(C_mt,1)
+        for j=1:size(C_mt,2)
+            Rho(i,j) = C_mt(i,j)/(C_mt(i,i).^(0.5).*C_mt(j,j).^(0.5));
+        end
+    end
+    
+    subplot(2,3,3);
+    surf(C_mt,'EdgeAlpha',0.0);
+    colormap jet;
+    view([0 90])
+    set(gca,'xtick',[]);
+    set(gca,'xticklabel',[]);
+    set(gca,'ytick',[]);
+    set(gca,'yticklabel',[]);
+    set(gca,'YDir','reverse');
+    title('Max. Covariance');
+    axis tight;
+    axis equal;
+    
+    subplot(2,3,6);
+    surf(Rho,'EdgeAlpha',0.0);
+    colormap jet;
+    view([0 90])
+    set(gca,'xtick',[]);
+    set(gca,'xticklabel',[]);
+    set(gca,'ytick',[]);
+    set(gca,'yticklabel',[]);
+    set(gca,'YDir','reverse');
+    title('Max. Correlation');
     axis tight;
     axis equal;
     
     figure('Position',[400 400 600 400]);
     subplot(2,2,1);
     plot(r_m, r_d,...
-        'o', 'MarkerFaceColor', 'k', 'color', 'k'); hold on;
+        '.', 'MarkerFaceColor', 'k', 'color', 'k'); hold on;
     scatter(r_m(index), r_d(index),...
         'o', 'MarkerFaceColor', 'g', 'MarkerEdgeColor', 'g'); hold on;
     scatter(r_m(1), r_d(1),...
@@ -85,11 +177,14 @@ function HorizonInterpolation()
         'o', 'MarkerFaceColor', 'b', 'MarkerEdgeColor', 'b'); hold on;
     xlabel('||r_{m}||');
     ylabel('||r_{d}||');
-    title('Data and Model Residual Comparison');
+    xlim([0.0 1.0]);
+    ylim([0.0 1.0]);
+    axis equal;
+    title('Data and Model Residuals');
     
     subplot(2,2,2);
     plot(log10(S_mv), sqrt(r_d.^2+r_m.^2),...
-        'o', 'MarkerFaceColor', 'k', 'MarkerEdgeColor', 'k'); hold on;
+        '.', 'MarkerFaceColor', 'k', 'MarkerEdgeColor', 'k'); hold on;
     plot(log10(S_mv(index)), r_norm(index),...
         'o', 'MarkerFaceColor', 'g', 'MarkerEdgeColor', 'g'); hold on;
     plot(log10(S_mv(1)), r_norm(1),...
@@ -98,7 +193,7 @@ function HorizonInterpolation()
         'o', 'MarkerFaceColor', 'b', 'MarkerEdgeColor', 'b'); hold on;
     xlabel('\sigma_{m}');
     ylabel('$\sqrt{||r_{m}||^{2}+||r_{m}||^{2}}$','Interpreter','Latex');
-    title('Minimized Residual with respect to Uncertainty');
+    title('Minimized Residual');
     
     subplot(2,2,[3,4]);
     errorbar(x_data, z_data, s_data, 'ro', 'color', 'k'); hold on;
@@ -111,7 +206,6 @@ function HorizonInterpolation()
     xlabel('X (km)');
     ylabel('Z (km)');
     axis tight;
-    axis equal;
     legend('Data Points','Model','Min. Model','Max. Model','Opt. Model',...
         'Location','southeast');
     title('Raw Data with Certain Models Displayed');
@@ -128,7 +222,7 @@ function HorizonInterpolation()
     plot3(log10(S_mv(index)).*ones(length(x),1),x,z(:,index),...
         'Color', 'g', 'LineWidth', 4); hold on;
     view([43, 54]);
-    title('Model Space with Specific Models');
+    title('Model & Data Space');
     xlabel('$\log_{10}(\sigma_{m})$','Interpreter','Latex');
     ylabel('X (km)');
     zlabel('Z (km)');
