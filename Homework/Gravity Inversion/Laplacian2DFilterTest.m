@@ -3,46 +3,102 @@ function Laplacian2DFilterTest()
     d_dim = 15;
     k_dim = m_dim*d_dim;
     
+    control = zeros(m_dim,d_dim);
+    control(1,:) = [-4 1 0 0 0  0 0  0 1 -4 1 0 0 1 -4];
+    control(2,:) = [ 1 0 0 0 0  0 0  0 0  1 0 0 0 0  1];
+    control(3,:) = [ 0 0 0 0 0  0 0  0 0  0 0 0 0 0  0];
+    control(4,:) = [ 0 0 0 0 0  0 0  0 0  0 0 0 0 0  1];
+    control(5,:) = [ 0 0 0 0 0  0 0  0 0  0 0 0 0 1 -4];
+    control(6,:) = [ 0 0 0 0 0  0 0  1 0  0 0 0 0 0  1];
+    control(7,:) = [ 0 0 0 0 0  0 1 -4 1  0 0 0 0 0  0];
+    control(8,:) = [ 1 0 0 0 0  0 0  1 0  0 0 0 0 0  0];
+    control(9,:) = [-4 1 0 0 0  0 0  0 0  0 0 0 0 0  0];
+    control(10,:) = [ 1 0 0 0 0  0 0  0 0  0 0 0 0 0  0];
+    control(11,:) = [ 0 0 0 0 0  0 0  0 0  0 0 0 0 0  0];
+    control(12,:) = [ 1 0 0 0 0  1 0  0 0  0 0 0 0 0  1];
+    control(13,:) = [-4 1 0 0 1 -4 1  0 0  0 0 0 0 1 -4];
+
+    
+    % tm = randi([0 1],m_dim,d_dim);
     tm = zeros(m_dim,d_dim);
-    tm(1,:) = [1 0 0 0 0 0 0 0 0 1 0 0 0 0 1];
-    tm(5,:) = [0 0 0 0 0 0 0 0 0 0 0 0 0 0 1];
-    tm(7,:) = [0 0 0 0 0 0 0 1 0 0 0 0 0 0 0];
-    tm(9,:) = [1 0 0 0 0 0 0 0 0 0 0 0 0 0 0];
+    tm(1,:)  = [1 0 0 0 0 0 0 0 0 1 0 0 0 0 1];
+    tm(5,:)  = [0 0 0 0 0 0 0 0 0 0 0 0 0 0 1];
+    tm(7,:)  = [0 0 0 0 0 0 0 1 0 0 0 0 0 0 0];
+    tm(9,:)  = [1 0 0 0 0 0 0 0 0 0 0 0 0 0 0];
     tm(13,:) = [1 0 0 0 0 1 0 0 0 0 0 0 0 0 1];
     
     B_lap = LaplacianFilter2D(m_dim, d_dim);
-    
     B_lap2 = zeros(k_dim);
+    
     for i=1:k_dim
         for j=1:k_dim
             B_lap2(i,j) = LaplacianFilter2DAt(i,j,m_dim,d_dim);
         end
     end
-            
+    
+    m1 = reshape(B_lap*reshape(tm,k_dim,1),m_dim,d_dim);
+    m2 = reshape(B_lap2*reshape(tm,k_dim,1),m_dim,d_dim);
     figure;
     imshow(mat2gray(tm),...
         'InitialMagnification', 3000, 'Colormap', flipud(gray));
+    title('Starting Model');
     set(gca,'Ydir','reverse');
 
     figure;
-    imshow(mat2gray(reshape(B_lap*reshape(tm,k_dim,1),m_dim,d_dim)),...
+    subplot(2,3,1);
+    imshow(mat2gray(control),...
         'InitialMagnification', 3000);
-    colormap(gray)
+    title('Control');
+    colormap(gray);
+    set(gca,'Ydir','reverse');
+    
+    subplot(2,3,2);
+    imshow(mat2gray(m1),...
+        'InitialMagnification', 3000);
+    title('Matrix');
+    colormap(gray);
+    set(gca,'Ydir','reverse');
+    
+    subplot(2,3,3);
+    imshow(mat2gray(m2),...
+        'InitialMagnification', 3000);
+    title('Function');
+    colormap(gray);
+    set(gca,'Ydir','reverse');
+    
+    subplot(2,3,5);
+    imshow(mat2gray(control-m1),...
+        'InitialMagnification', 3000);
+    title('Difference');
+    colormap(flipud(gray));
+    set(gca,'Ydir','reverse');
+    
+    subplot(2,3,6);
+    imshow(mat2gray(control-m2),...
+        'InitialMagnification', 3000);
+    title('Difference');
+    colormap(flipud(gray));
     set(gca,'Ydir','reverse');
     
     figure;
-    imshow(mat2gray(reshape(B_lap2*reshape(tm,k_dim,1),m_dim,d_dim)),...
-        'InitialMagnification', 3000);
-    colormap(gray)
-    set(gca,'Ydir','reverse');
-    
-    figure;
+    subplot(2,2,1);
     imshow(mat2gray(B_lap),...
         'InitialMagnification', 300);
+    title('Matrix');
+    set(gca,'Ydir','reverse');
     
-    figure;
+    subplot(2,2,2);
     imshow(mat2gray(B_lap2),...
         'InitialMagnification', 300);
+    title('Function');
+    set(gca,'Ydir','reverse');
+    
+    subplot(2,2,[3 4]);
+    imshow(mat2gray(B_lap2-B_lap),...
+        'InitialMagnification', 300);
+    title('Difference');
+    colormap(flipud(gray));
+    set(gca,'Ydir','reverse');
 end
 
 function [ B ] = LaplacianFilter2D(x,y)
