@@ -1,35 +1,37 @@
 function GravityInversion()
+    % Get data from file
     filename = 'data.txt';
     data = importdata(filename);
     data = data.data;
-    
+    % Import the data
     x_data = data(:,1);
     z_data = data(:,2);
     dg_data = data(:,3);
     dgs_data = data(:,4);
-    
+    % Setup x space
     x_min = 0.0;
     x_max = 30.0;
     x_delta = 0.25;
     x = x_min:x_delta:x_max;
-    
+    % Setup z space
     z_min = 0.0;
     z_max = 3.0;
     z_delta = 0.25;
     z = z_min:z_delta:z_max;
-    
+    % Setup advised topography
     z_topo = (-1.0)+(x/40.0)+...
         (0.25*cos((3.1415926/2).*(x.^2)./(x_max-x_min)));
-    
+    % Useful lengths
     lxd = length(x_data);
     lxz = length(x)*length(z);
-    
+    % Setp meshgrid for plots and iterating
     [XZ, ZX] = meshgrid(x,z);
-    
+    % Convert meshgrid
     X = reshape(XZ',[1 lxz]);
     Z = reshape(ZX',[1 lxz]);
     
-    K = zeros(lxd, lxz); % Initialize the G matrix
+    % Initialize the K matrix
+    K = zeros(lxd, lxz);
     for i=1:lxd
         for j=1:lxz
             K(i,j) = (6.67*10^(-2))*(10)*(2)*...
@@ -38,11 +40,39 @@ function GravityInversion()
         end
     end
     
+    % Test model example
+    tsm = zeros(length(x), length(z));
+    tsm(46:50,4:8) = -100;
+    
+    figure;
+    subplot(2,1,1);
+    plot(x_data, GravityDataFromModel(K, reshape(tsm, lxz, 1)),...
+        'color', 'b', 'LineWidth', 3);
+    xlim([min(x),max(x)]);
+    ylim([-400, 400]);
+    title('G(m), \Delta \rho = -100 kg/m^{3}, y_{max} = 10 km');
+    xlabel('x (km)');
+    ylabel('\Delta g_{z} (km/s^{2})');
+    
+    subplot(2,1,2);
+    plot(x, z_topo, 'color', 'b'); hold on;
+    surf(XZ, ZX, reshape(tsm, length(x), length(z))',...
+        'EdgeAlpha',0.0);
+    xlim([min(x),max(x)]);
+    ylim([min(z_topo).*1.2,max(z)]);
+    title('m')
+    xlabel('x (km)');
+    ylabel('z (km)');
+    set(gca, 'Ydir', 'reverse');
+    colormap winter;
+    axis equal;
+    axis tight;
+    
     % Setup the inverse problem
-    W_d = diag(1./(dgs_data)); % Diagonalize the data uncertainties
+    W_d = diag(1./(dgs_data));
     dg_model = zeros(lxz,1);
-    iter = 15;
-    S = logspace(-3,5,iter);
+    iter = 30;
+    S = logspace(-2,6,iter);
     
     W_mk = SparseLaplacian(lxz, length(x), length(z));
 
@@ -153,7 +183,8 @@ function PlotGravityModel(x_data, z_data, dg_data, dgs_data,...
     plot(x_data, GravityDataFromModel(K, dg),...
         'color', 'b', 'LineWidth', 3);
     xlim([min(x),max(x)]);
-    title(['d', ' \sigma_{d} = ', num2str(sd), ', G(m)']);
+    title(['$d, ', ' \sigma_{d} = ', num2str(sd), ', G(\tilde{m})$'],...
+        'Interpreter','Latex');
     xlabel('x (km)');
     ylabel('\Delta g_{z} (km/s^{2})');
     
@@ -164,7 +195,7 @@ function PlotGravityModel(x_data, z_data, dg_data, dgs_data,...
         'EdgeAlpha',0.0);
     xlim([min(x),max(x)]);
     ylim([min(zs).*1.2,max(z)]);
-    title('m');
+    title('$\tilde{m}$','Interpreter','Latex');
     xlabel('x (km)');
     ylabel('z (km)');
     set(gca, 'Ydir', 'reverse');
@@ -176,7 +207,7 @@ function PlotGravityModel(x_data, z_data, dg_data, dgs_data,...
         'EdgeAlpha',0.0);
     xlim([min(x),max(x)]);
     ylim([min(zs).*1.2,max(z)]);
-    title('diag(C_{m})');
+    title('$diag(\tilde{C}_{m})$','Interpreter','Latex');
     xlabel('x (km)');
     ylabel('z (km)');
     set(gca, 'Ydir', 'reverse');
