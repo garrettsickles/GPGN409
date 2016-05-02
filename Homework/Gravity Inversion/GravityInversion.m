@@ -71,8 +71,8 @@ function GravityInversion()
     % Setup the inverse problem
     W_d = diag(1./(dgs_data));
     dg_model = zeros(lxz,1);
-    iter = 30;
-    S = logspace(-2,6,iter);
+    iter = 50;
+    S = logspace(-2,2,iter);
     
     W_mk = SparseLaplacian(lxz, length(x), length(z));
 
@@ -183,8 +183,8 @@ function PlotGravityModel(x_data, z_data, dg_data, dgs_data,...
     plot(x_data, GravityDataFromModel(K, dg),...
         'color', 'b', 'LineWidth', 3);
     xlim([min(x),max(x)]);
-    title(['$d, ', ' \sigma_{d} = ', num2str(sd), ', G(\tilde{m})$'],...
-        'Interpreter','Latex');
+    title(['$d, ', ' \sigma_{d},',' \sigma_{m} = ',...
+        num2str(sd), ', G(\tilde{m})$'],'Interpreter','Latex');
     xlabel('x (km)');
     ylabel('\Delta g_{z} (km/s^{2})');
     
